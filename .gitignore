@@ -72,3 +72,5 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 Away away/Library/
 Away away/Logs/
+Away away/obj/
+Away away/Temp/
