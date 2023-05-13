@@ -1,4 +1,3 @@
-using Photon.Pun;
 using UnityEngine;
 using System.Collections;
 
@@ -15,7 +14,6 @@ public class Knockbacker : MonoBehaviour
         controller = GetComponent<CharacterController>();
     }
 
-    [PunRPC]
     public void KnockbackObject(Vector2 force)
     {
         if (rb == null) return;

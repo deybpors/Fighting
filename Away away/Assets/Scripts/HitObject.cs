@@ -1,4 +1,3 @@
-using Photon.Pun;
 using UnityEngine;
 using static ObjectPooler;
 
@@ -42,17 +41,13 @@ public class HitObject : MonoBehaviour
         var objectHit = collision.gameObject;
         if (objectHit == creator) return;
 
-        Debug.Log(gameObject.name + " hit " + objectHit.name + "\nwith a force of " + knockbackForce);
+        Debug.Log(creator.gameObject.name + " hit " + objectHit.name + "\nwith a force of " + knockbackForce);
 
-        var view = objectHit.GetComponent<PhotonView>();
-        if (view != null)
-        {
-            var force = (objectHit.transform.position - creator.transform.position).normalized * knockbackForce;
-            force.y = knockbackForce;
-            view.RPC("KnockbackObject", RpcTarget.All, (Vector2)force);
-        }
+        var force = (objectHit.transform.position - creator.transform.position).normalized * knockbackForce;
+        force.y = knockbackForce;
+        objectHit.SendMessage("KnockbackObject", (Vector2)force, SendMessageOptions.DontRequireReceiver);
 
-        if(pool == null || pool.prefab == null)
+        if (pool == null || pool.prefab == null)
         {
             pool = new Pool(gameObject);
         }

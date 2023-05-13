@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Photon.Pun;
 
 public class CustomInput : MonoBehaviour
 {
@@ -16,17 +15,14 @@ public class CustomInput : MonoBehaviour
     private InputAction move;
     private InputAction hit;
     private InputAction jump;
-    private PhotonView photonView;
 
     private void Awake()
     {
         inputActions = new InputActions();
-        photonView = GetComponent<PhotonView>();
     }
 
     private void Update()
     {
-        if (!photonView.IsMine) return;
 
         MoveValue = move.ReadValue<Vector2>();
 
@@ -66,10 +62,5 @@ public class CustomInput : MonoBehaviour
         move.Disable();
         hit.Disable();
         jump.Disable();
-    }
-
-    public PhotonView GetPhotonView()
-    {
-        return photonView;
     }
 }

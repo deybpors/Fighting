@@ -1,6 +1,4 @@
 using UnityEngine;
-using Photon.Pun;
-
 public class SpawnPlayers : MonoBehaviour
 {
     [SerializeField] private FollowTarget followTarget;
@@ -8,7 +6,7 @@ public class SpawnPlayers : MonoBehaviour
 
     private void Start()
     {
-        var player = PhotonNetwork.Instantiate(playerPrefab.name, transform.position, Quaternion.identity);
+        var player = Instantiate(playerPrefab, transform.position, Quaternion.identity);
         followTarget.target = player.transform;
     }
 }

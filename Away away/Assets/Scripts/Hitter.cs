@@ -1,4 +1,3 @@
-using Photon.Pun;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -29,7 +28,6 @@ public class Hitter : MonoBehaviour
         attackTimer += Time.deltaTime;
     }
 
-    [PunRPC]
     public void BasicHitCombo()
     {
         if (attackTimer <= attackRate)
@@ -83,7 +81,6 @@ public class Hitter : MonoBehaviour
         }
     }
 
-    [PunRPC]
     public void ResetAttackTimer()
     {
         attackCastTimer = 0;
