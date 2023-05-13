@@ -1,10 +1,11 @@
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class CharacterController : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float jumpForce = 10f;
+    [SerializeField] private float fallMultiplier = 2.5f;
+    [SerializeField] private float lowJumpMultiplier = 2f;
     [SerializeField] private Vector3 offset;
     [SerializeField] private LayerMask groundLayer;
 
@@ -12,52 +13,99 @@ public class CharacterController : MonoBehaviour
     private bool isGrounded;
     private float horizontalMovement;
     private Transform trans;
-    private Vector2 checkGround = Vector2.down;
-    float distance = 0.1f;
+    private Quaternion left;
+    private Quaternion right;
+    private CustomInput input;
+    private Collider2D col;
+    private Collision2D cols;
+    private Hitter hitter;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        trans = GetComponent<Transform>();
+        trans = transform;
+        input = GetComponent<CustomInput>();
+        col = GetComponent<Collider2D>();
+        hitter = GetComponent<Hitter>();
+        left = Quaternion.Euler(0, 180, 0);
+        right = Quaternion.Euler(0, 0, 0);
+
+
+        if (input != null)
+        {
+            input.OnJump += Jump;
+            input.OnHit += hitter.BasicHitCombo;
+            input.OnHit += hitter.ResetAttackTimer;
+        }
     }
 
     void Update()
     {
+        horizontalMovement = input.MoveValue.x * moveSpeed;
 
-        float horizontalInput = Input.GetAxisRaw("Horizontal");
-
-        horizontalMovement = horizontalInput * moveSpeed;
-
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        if(input.MoveValue.x < 0)
         {
-            rb.AddForce(new Vector2(0f, jumpForce), ForceMode2D.Impulse);
-            isGrounded = false;
+            trans.rotation = left;
+        }
+        else if(input.MoveValue.x > 0)
+        {
+            trans.rotation = right;
         }
 
-        DebugRaycast();
+        // Apply different forces during ascent and descent
+        if (rb.velocity.y < 0)
+        {
+            rb.velocity += Vector2.up * Physics.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
+        }
+        else if (rb.velocity.y > 0 && !input.JumpValue)
+        {
+            rb.velocity += Vector2.up * Physics.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
+        }
+    }
+
+    void Jump()
+    {
+        if (!isGrounded) return;
+        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
     }
 
     void FixedUpdate()
     {
+        if (horizontalMovement == 0) return;
         Vector2 movement = new Vector2(horizontalMovement, rb.velocity.y);
         rb.velocity = movement;
-      
+    }
 
-        RaycastHit2D hit = Physics2D.Raycast(trans.position + offset, checkGround, distance, groundLayer);
-        if (hit.collider != null)
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        cols = collision;
+        // Get the contact point of the collision.
+        Vector2 contactPoint = collision.GetContact(0).point;
+
+        // Check if the contact point is below the center of the collider.
+        isGrounded = contactPoint.y < col.bounds.center.y;
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if(cols == collision)
         {
-            isGrounded = true;
-        }
-        else
-        {
+            cols = null;
             isGrounded = false;
         }
     }
 
-    private void DebugRaycast()
+    private void OnDisable()
     {
-        Vector2 newPos = (trans.position + offset);
-        Vector2 endPoint = newPos + (checkGround * distance);
-        Debug.DrawLine(trans.position, endPoint, Color.green);
+        if (isGrounded)
+        {
+            rb.velocity = Vector2.zero;
+        }
     }
+
+    public CustomInput GetInput()
+    {
+        return input;
+    }
+
 }

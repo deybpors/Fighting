@@ -1,37 +1,91 @@
+using Photon.Pun;
+using System;
+using System.Collections;
 using UnityEngine;
 using static ObjectPooler;
 
 public class Hitter : MonoBehaviour
 {
-    [SerializeField] private Transform attackPoint;
+    [Range(0f, .5f)]
+    [SerializeField] private float attackCastRate = .3f;
+    [Range(0f, .5f)]
+    [SerializeField] private float attackRate = .3f;
+    [SerializeField] private Vector2 hitOffset = new Vector2(0, 1f);
     [SerializeField] private Pool hitObject;
+    [SerializeField] private float basicHitKnockback = 3f;
 
-    private Rigidbody2D rb;
-    private Vector2 left = Vector2.left;
-    private Vector2 right = Vector2.right;
+    private float attackTimer;
+    private int basicHitCombo;
+    private float attackCastTimer;
+    private CharacterController controller;
 
     private void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
+        controller = GetComponent<CharacterController>();
     }
 
     private void Update()
     {
-        if(rb.velocity.x < 0)
+        attackTimer += Time.deltaTime;
+    }
+
+    [PunRPC]
+    public void BasicHitCombo()
+    {
+        if (attackTimer <= attackRate)
         {
-            attackPoint.localPosition = left;
-        }
-        else
-        {
-            attackPoint.localPosition = right;
+            return;
         }
 
-        if (Input.GetKeyDown(KeyCode.T)) 
+        float horizontalInput = controller.GetInput().MoveValue.x;
+        if(horizontalInput == 0)
         {
-            var hitObj = instance.GetObject(hitObject, attackPoint.position, Quaternion.identity);
-            hitObj.prefab.transform.parent = attackPoint;
-
-            hitObj.prefab.GetComponent<HitObject>().creator = gameObject;
+            horizontalInput = transform.rotation.eulerAngles.y > 0 ? -1 : 1;
         }
+
+        var inputVector = new Vector2(horizontalInput, controller.GetInput().MoveValue.y).normalized;
+        inputVector += hitOffset;
+
+
+        var hitObj = instance.GetObject(hitObject, (Vector2)transform.position + inputVector, Quaternion.identity);
+        hitObj.prefab.transform.parent = transform;
+
+        var hitterObj = hitObj.prefab.GetComponent<HitObject>();
+        hitterObj.creator = gameObject;
+
+        StartCoroutine(Pause());
+
+        if (basicHitCombo >= 3)
+        {
+            hitterObj.InitializeKnockbackForce(basicHitKnockback * 2f);
+            basicHitCombo = 0;
+            return;
+        }
+
+        hitterObj.InitializeKnockbackForce(basicHitKnockback);
+        basicHitCombo++;
+    }
+
+    private IEnumerator Pause()
+    {
+        attackTimer = 0;
+        while(true)
+        {
+            controller.enabled = false;
+            attackCastTimer += Time.deltaTime;
+            if(attackCastTimer > attackCastRate)
+            {
+                controller.enabled = true;
+                attackCastTimer = 0;
+                break;
+            }
+            yield return null;
+        }
+    }
+
+    [PunRPC]
+    public void ResetAttackTimer()
+    {
+        attackCastTimer = 0;
     }
 }

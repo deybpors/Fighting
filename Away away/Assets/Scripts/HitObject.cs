@@ -1,13 +1,13 @@
+using Photon.Pun;
 using UnityEngine;
 using static ObjectPooler;
 
 public class HitObject : MonoBehaviour
 {
     public GameObject creator;
-
     public float despawnTime = .1f;
-
     private float currentTime;
+    private float knockbackForce = 3f;
 
     private Pool pool;
 
@@ -27,6 +27,10 @@ public class HitObject : MonoBehaviour
 
         if(currentTime > despawnTime )
         {
+            if (pool == null || pool.prefab == null)
+            {
+                pool = new Pool(gameObject);
+            }
             instance.ReturnObject(pool);
         }
     }
@@ -35,9 +39,28 @@ public class HitObject : MonoBehaviour
     {
         if (collision == null) return;
 
-        if(collision.gameObject == creator) return;
+        var objectHit = collision.gameObject;
+        if (objectHit == creator) return;
 
-        Debug.Log("We hit " +  collision.gameObject);
+        Debug.Log(gameObject.name + " hit " + objectHit.name + "\nwith a force of " + knockbackForce);
+
+        var view = objectHit.GetComponent<PhotonView>();
+        if (view != null)
+        {
+            var force = (objectHit.transform.position - creator.transform.position).normalized * knockbackForce;
+            force.y = knockbackForce;
+            view.RPC("KnockbackObject", RpcTarget.All, (Vector2)force);
+        }
+
+        if(pool == null || pool.prefab == null)
+        {
+            pool = new Pool(gameObject);
+        }
         instance.ReturnObject(pool);
+    }
+
+    public void InitializeKnockbackForce(float force)
+    {
+        knockbackForce = force;
     }
 }
